@@ -68,30 +68,30 @@ function triangle(a, b, c, count, isGasket) {
 };
 
 
-function square(a, b, c, e, count) {
+function square(a, b, c, d, count) {
 	var pts = [];
-	getPoints(a, b, c, e, count);
+	getPoints(a, b, c, d, count);
 
 	return pts;
 
-	function getPoints(a, b, c, e, count) {
-		var ae, ab, bc, ce, aebc;
+	function getPoints(a, b, c, d, count) {
+		var ab, bc, cd, ad, abcd;
 
 		if (count === 0) {
 			pts.push(a, b, c);
-			pts.push(c, e, a);
+			pts.push(c, d, a);
 		} else {
 			ab = middlePoint(a, b);
 			bc = middlePoint(b, c);
-			ce = middlePoint(c, e);
-			ae = middlePoint(a, e);
-			aebc = middlePoint(ae, bc);
+			ce = middlePoint(c, d);
+			ae = middlePoint(a, d);
+			aebc = middlePoint(ad, bc);
 
 			--count;
-			getPoints(ab, b, bc, aebc, count);
-			getPoints(ae, aebc, ce, e, count);
-			getPoints(aebc, bc, c, ce, count);
-			getPoints(a, ab, aebc, ae, count);
+			getPoints(ab, b, bc, abcd, count);
+			getPoints(ad, abcd, cd, d, count);
+			getPoints(abcd, bc, c, cd, count);
+			getPoints(a, ab, abcd, ad, count);
 		}
 	}
 };
