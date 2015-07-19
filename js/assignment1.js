@@ -139,7 +139,6 @@ function drawShape(options) {
 	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
 	gl.enableVertexAttribArray(vPosition);
 
-	//doRotate(_initialRotation);
 	render(pts, options);
 }
 
