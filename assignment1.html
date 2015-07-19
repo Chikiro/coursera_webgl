@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Coursera - WebGL Assignments">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Coursera - WebGL Assignments - Assignment 1</title>
+
+	<script src="js/coursera/webgl-utils.js"></script>
+	<script src="js/coursera/initShaders.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/assignment1.js"></script>
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		attribute vec4 vPosition;
+		void
+		main()
+		{
+			gl_Position = vPosition;
+		}
+	</script>
+
+	<script id="fragment-shader" type="x-shader/x-fragment">
+		precision mediump float;
+		void
+		main()
+		{
+			gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+		}
+	</script>
+</head>
+<body>
+	<h2>Coursera WebGL Assignments</h2>
+	<h3>Twist & Tasselation</h3>
+	<section>
+		<h4>Options</h4>
+		<form id="options">
+		  <div>
+			<label for="rotateDegree">Theta: </label>
+			<input type="range" name="rotateDegree" min="0" value="30" max="720" step="5" >
+		  </div>
+		  <div>
+			<label for="divisions">Divisions: </label>
+			<input type="range" name="divisions" min="0" value="4" max="7" step="1">
+		  </div>
+		  <div>
+			<label for="fill">Fill: </label>
+			<label><input type="radio" name="fill" value="solid" checked> Solid</label>
+			<label><input type="radio" name="fill" value="mesh"> Mesh</lable>
+		  </div>
+		  <div>
+			<label for="shape">Shape: </label>
+			<label><input type="radio" name="shape" value="triangle" checked> Triangle</label>
+			<label><input type="radio" name="shape" value="square"> Square</label>
+		  </div>
+		  <div>
+			<label for="gasket">Gasket: </label>
+			<input type="checkbox" name="isGasket" value="true">
+		  </div>
+		</form>
+	</section>
+	<section>
+		<canvas id="gl-canvas" width="512" height="512">Oops ... your browser doesn't support the HTML5 canvas element</canvas>
+	</section>
+</body>
+</html>
