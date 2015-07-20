@@ -83,7 +83,7 @@ function square(a, b, c, d, count) {
 		} else {
 			ab = middlePoint(a, b);
 			bc = middlePoint(b, c);
-			ce = middlePoint(c, d);
+			cd = middlePoint(c, d);
 			ae = middlePoint(a, d);
 			aebc = middlePoint(ad, bc);
 
