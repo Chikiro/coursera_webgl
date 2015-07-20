@@ -84,8 +84,8 @@ function square(a, b, c, d, count) {
 			ab = middlePoint(a, b);
 			bc = middlePoint(b, c);
 			cd = middlePoint(c, d);
-			ae = middlePoint(a, d);
-			aebc = middlePoint(ad, bc);
+			ad = middlePoint(a, d);
+			abcd = middlePoint(ad, bc);
 
 			--count;
 			getPoints(ab, b, bc, abcd, count);
