@@ -131,6 +131,14 @@ function drawShape(options) {
 
 	pts = rotateShape(pts, options.rotateDegree);
 
+	var bufferId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(pts), gl.STATIC_DRAW);
+
+	var vPosition = gl.getAttribLocation(program, 'vPosition');
+	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(vPosition);
+
 	var colors = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 	var cBuffer = gl.createBuffer();
@@ -139,14 +147,6 @@ function drawShape(options) {
 	var vColor = gl.getAttribLocation( program, "vColor" );
 	gl.vertexAttribPointer(vColor, 3, gl.FLOAT, false, 0, 0 );
 	gl.enableVertexAttribArray(vColor);
-
-	var bufferId = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-	gl.bufferData(gl.ARRAY_BUFFER, flatten(pts), gl.STATIC_DRAW);
-
-	var vPosition = gl.getAttribLocation(program, 'vPosition');
-	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-	gl.enableVertexAttribArray(vPosition);
 
 	render(pts, options);
 }
