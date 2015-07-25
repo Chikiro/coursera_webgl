@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Coursera - WebGL Assignments">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Coursera - WebGL Assignments - Assignment 2</title>
+
+	<link rel="stylesheet" type="text/css" href="js/spectrum-1.7.0/spectrum.css">
+
+	<script src="js/coursera/webgl-utils.js"></script>
+	<script src="js/coursera/initShaders.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/spectrum-1.7.0/spectrum.js"></script>
+	<script src="js/TinyColor-1.0.0/tinycolor.js"></script>
+	<script src="js/assignment2.js"></script>
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		attribute vec4 vPosition;
+		attribute vec4 vColor;
+		varying vec4 fColor;
+		void main() {
+			gl_Position = vPosition;
+			fColor = vColor;
+		}
+	</script>
+	<script id="fragment-shader" type="x-shader/x-fragment">
+		precision mediump float;
+		varying vec4 fColor;
+		void main() {
+			gl_FragColor = fColor;
+		}
+	</script>
+	<script>
+
+	$(document).ready(function(){
+		$("#colorpicker").spectrum({
+			color: "#f00"
+		});
+	});
+	</script>
+	<style>
+		* { margin:0; padding:0; } /* to remove the top and left whitespace */
+		html, body { width:100%; height:100%; } /* just to be sure these are full screen*/
+		canvas { display:block; } /* To remove the scrollbars */
+	</style>
+</head>
+<body>
+	<section>
+		<canvas id="gl-canvas" style="background:#ccc;border:1px solid black;" width="500" height="500">Oops ... your browser doesn't support the HTML5 canvas element</canvas>
+	</section>
+	<section>
+		<h4>Options</h4>
+		<form id="options">
+		  <div>
+			<label for="width">Width: </label>
+			<input type="range" name="width" min="1" value="2" max="5" step="1" >
+		</div>
+		<div>
+			<label for="width">Color: </label>
+			<input type="text" id="colorpicker" name="color">
+		  </div>
+		</form>
+	</section>
+</body>
+</html>
