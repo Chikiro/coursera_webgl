@@ -7,7 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Coursera - WebGL Assignments - Assignment 2</title>
 
-	<link rel="stylesheet" type="text/css" href="js/spectrum-1.7.0/spectrum.css">
+	<!--<link rel="stylesheet" type="text/css" href="js/spectrum-1.7.0/spectrum.css">-->
 
 	<script src="js/coursera/webgl-utils.js"></script>
 	<script src="js/coursera/initShaders.js"></script>
@@ -15,7 +15,7 @@
 	<script src="js/coursera/MV.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-	<script src="js/spectrum-1.7.0/spectrum.js"></script>
+	<!--<script src="js/spectrum-1.7.0/spectrum.js"></script>-->
 	<script src="js/TinyColor-1.0.0/tinycolor.js"></script>
 	<script src="js/assignment2.js"></script>
 	<script id="vertex-shader" type="x-shader/x-vertex">
@@ -37,16 +37,16 @@
 	<script>
 
 	$(document).ready(function(){
-		$("#colorpicker").spectrum({
-			color: "#f00",
-			showInput: true,
-			showInitial: true,
-			preferredFormat: 'hex',
-			clickoutFiresChange: true,
-			change: function(color) {
-				color.toHexString(); // #ff0000
-			}
-		});
+		//$("#colorpicker").spectrum({
+		//	color: "#f00",
+		//	showInput: true,
+		//	showInitial: true,
+		//	preferredFormat: 'hex',
+		//	clickoutFiresChange: true,
+		//	change: function(color) {
+		//		color.toHexString(); // #ff0000
+		//	}
+		//});
 	});
 	</script>
 	<style>
@@ -68,7 +68,7 @@
 		</div>
 		<div>
 			<label for="width">Color: </label>
-			<input type="text" id="colorpicker" name="color">
+			<input type="color" id="colorpicker" name="color">
 		  </div>
 		</form>
 	</section>
