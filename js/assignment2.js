@@ -11,50 +11,24 @@
 		var gl = WebGLUtils.setupWebGL(canvas.get(0), {preserveDrawingBuffer: true});
 		if (!gl) {alert('WebGL isn\'t available');}
 
-		gl.viewport(0, 0, canvas.width(), canvas.height());
+		gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 		gl.clearColor(1.0, 1.0, 1.0, 1.0);
-		gl.lineWidth(1);
-		var program = initShaders(gl, 'vertex-shader', 'fragment-shader');
-		gl.useProgram(program);
-
-		var vBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, 100000, gl.DYNAMIC_DRAW);
-
-		// shader variables for vertex data buffer
-		var vPosition = gl.getAttribLocation(program, 'vPosition');
-		gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-		//gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(vPosition);
-
-		//gl.clear(gl.COLOR_BUFFER_BIT);
-		//gl.drawArrays(gl.TRIANGLES, 0, verteces.length);
-
-		// color buffer
-		var cBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, 100000, gl.DYNAMIC_DRAW);
-
-		// shader variables for color data buffer
-		var vColor = gl.getAttribLocation(program, 'vColor');
-		gl.vertexAttribPointer(vColor, 3, gl.FLOAT, false, 0, 0);
-		//gl.vertexAttribPointer(vColor, 2, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(vColor);
+		//gl.lineWidth(1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		var drawingData = {
 			'isDrawing': false,
-			'points': [],
-			//'shapes': []
+			'currentTrace': null,
+			'vertCount': 0,
+			//'traces': []
 		};
-
-		drawLine([], gl, vBuffer, cBuffer, canvas);
 
 		// bind events
 		//$(window).resize({'canvas': canvas, 'gl': gl, 'drawingData': drawingData, 'vBuffer': vBuffer}, resizeCanvasHandler);
-		canvas.mousedown({'gl': gl, 'drawingData': drawingData, 'vBuffer': vBuffer, 'cBuffer': cBuffer}, drawStartHandler);
-		canvas.mousemove({'gl': gl, 'drawingData': drawingData, 'vBuffer': vBuffer, 'cBuffer': cBuffer}, drawProcessingHandler);
-		canvas.mouseup({'gl': gl, 'drawingData': drawingData, 'vBuffer': vBuffer, 'cBuffer': cBuffer}, drawEndHandler);
-		canvas.mouseout({'gl': gl, 'drawingData': drawingData, 'vBuffer': vBuffer, 'cBuffer': cBuffer}, drawEndHandler);
+		canvas.mousedown({'gl': gl, 'drawingData': drawingData}, drawStartHandler);
+		canvas.mousemove({'gl': gl, 'drawingData': drawingData}, drawProcessingHandler);
+		canvas.mouseup({'gl': gl, 'drawingData': drawingData}, drawEndHandler);
+		canvas.mouseout({'gl': gl, 'drawingData': drawingData}, drawEndHandler);
 		$('#options').change({'options': options}, changeOptionsHandler);
 	}
 
@@ -65,22 +39,32 @@
 	function drawStartHandler(event){
 		var canvas = event.target;
 		event.data.drawingData.isDrawing = true;
-		event.data.drawingData.points.push(new Point(event.pageX, event.pageY));
+		var options = readOptions();
+		var currentTrace = new glTrace([new Point(event.pageX, event.pageY)], event.data.gl, options);
+		event.data.drawingData.currentTrace = currentTrace;
 	}
 
 	function drawProcessingHandler(event){
-		var canvas = event.target;
 		if (event.data.drawingData.isDrawing) {
-			event.data.drawingData.points.push(new Point(event.pageX, event.pageY));
-			drawLine(event.data.drawingData.points, event.data.gl, event.data.vBuffer, event.data.cBuffer, $(event.target));
+			var trace = event.data.drawingData.currentTrace;
+				trace.points.push(new Point(event.pageX, event.pageY));
+				trace.render();
 		}
 	}
 
 	function drawEndHandler(event){
-		event.data.drawingData.points.push(new Point(event.pageX, event.pageY));
+		if (event.data.drawingData.isDrawing) {
+			var trace = event.data.drawingData.currentTrace;
+			var newPoint = new Point(event.pageX, event.pageY);
+			if (trace.points.length > 0) {
+				var prevPoint = trace.points[trace.points.length - 1];
+				if (newPoint.x != prevPoint.x || newPoint.y != newPoint.y) {
+					trace.points.push(newPoint);
+					trace.render();
+				}
+			}
+		}
 		event.data.drawingData.isDrawing = false;
-		//event.data.drawingData.shapes.push(event.data.drawingData.points.slice(0));
-		event.data.drawingData.points = [];
 	}
 
 	function resizeCanvas(canvas) {
@@ -92,48 +76,6 @@
 		var canvas = event.data.canvas;
 		var gl = event.data.gl;
 		resizeCanvas(canvas);
-		render(gl);
-	}
-
-	function drawLine(points, gl, vBuffer, cBuffer, canvas) {
-		var options = readOptions();
-		var verteces = [];
-		var colors = [];
-		var prevPoint = null;
-		var width = canvas.width();
-		var height = canvas.height();
-
-		$.each(points, function(index, point) {
-			if (prevPoint) {
-				var lineWidth = options.lineWidth,
-					dX = point.x - prevPoint.x,
-					dY = point.y - prevPoint.y,
-					t = Math.sqrt(Math.pow(lineWidth, 2) / (Math.pow(dX, 2) + Math.pow(dY, 2))),
-					normalX = t * -dY,
-					normalY = t * dX;
-				var a = new Point(prevPoint.x - normalX, prevPoint.y - normalY).toClip(width, height);
-				var b = new Point(prevPoint.x + normalX, prevPoint.y + normalY).toClip(width, height);
-				var c = new Point(point.x - normalX, point.y - normalY).toClip(width, height);
-				var d = new Point(point.x + normalX, point.y + normalY).toClip(width, height);
-				verteces.push(a.vec2(), b.vec2(), c.vec2(), d.vec2());
-				for (var i=0; i<4; i++) {
-					colors.push(options.color.r/255, options.color.g/255, options.color.b/255);
-				}
-			}
-			prevPoint = point;
-		});
-
-		
-		var vOffset = 0; //sizeof.vec2 * 4 * verteces.length;
-		gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-		gl.bufferSubData(gl.ARRAY_BUFFER, vOffset, flatten(verteces));
-
-		var colorOffset = 0; //sizeof.vec3 * verteces.length;
-		gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-		gl.bufferSubData(gl.ARRAY_BUFFER, colorOffset, flatten(colors));
-
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, verteces.length);
 	}
 
 	function readOptions() {
@@ -150,6 +92,97 @@
 			'lineWidth': parseInt(options['width'] || 2),
 			'color': color.toRgb()
 		}
+	}
+
+	function glTrace(points, gl, options) {
+		this.points = points || [];
+		this.options = options || {};
+		this.gl = gl;
+		this.renderIndex = null;
+		this._initBuffers();
+	}
+
+	glTrace.prototype._initBuffers = function() {
+		var gl = this.gl;
+		var program = initShaders(gl, 'vertex-shader', 'fragment-shader');
+		gl.useProgram(program);
+
+		var vBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, 50000, gl.DYNAMIC_DRAW);
+
+		var vPosition = gl.getAttribLocation(program, 'vPosition');
+		gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(vPosition);
+
+		var cBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, 50000, gl.DYNAMIC_DRAW);
+
+		// shader variables for color data buffer
+		var vColor = gl.getAttribLocation(program, 'vColor');
+		gl.vertexAttribPointer(vColor, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(vColor);
+		
+		this.vBuffer = vBuffer;
+		this.cBuffer = cBuffer;
+	}
+
+	glTrace.prototype.render = function() {
+		this.isRendering = true;
+		var gl = this.gl;
+		var prevPoint = null;
+		var width = $(gl.canvas).width();
+		var height = $(gl.canvas).height();
+		var options = this.options;
+		var renderIndex = this.renderIndex;
+		var newIndex = null;
+		var verteces = [];
+		var colors = [];
+
+		$.each(this.points, function(index, point) {
+			if (prevPoint && (!renderIndex || renderIndex < index)) {
+				var lineWidth = options.lineWidth,
+					dX = point.x - prevPoint.x,
+					dY = point.y - prevPoint.y,
+					t = Math.sqrt(Math.pow(lineWidth, 2) / (Math.pow(dX, 2) + Math.pow(dY, 2))),
+					normalX = t * -dY,
+					normalY = t * dX;
+				var a = new Point(prevPoint.x - normalX, prevPoint.y - normalY).toClip(width, height);
+				var b = new Point(prevPoint.x + normalX, prevPoint.y + normalY).toClip(width, height);
+				var c = new Point(point.x - normalX, point.y - normalY).toClip(width, height);
+				var d = new Point(point.x + normalX, point.y + normalY).toClip(width, height);
+				verteces.push(a.vec2(), b.vec2(), c.vec2(), d.vec2());
+				for (var i=0; i<4; i++) {
+					colors.push(options.color.r/255, options.color.g/255, options.color.b/255);
+				}
+				newIndex = index;
+			}
+			prevPoint = point;
+		});
+
+		if (renderIndex > 0) {
+			var num = this.renderIndex * 4;
+			var vOffset = sizeof.vec2 * this.renderIndex * 4;
+			var colorOffset = sizeof.vec3 * this.renderIndex * 4;
+		}
+		else {
+			var num = 0;
+			var vOffset = 0;
+			var colorOffset = 0;
+		}
+		
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+		gl.bufferSubData(gl.ARRAY_BUFFER, vOffset, flatten(verteces));
+
+		
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+		gl.bufferSubData(gl.ARRAY_BUFFER, colorOffset, flatten(colors));
+
+		//gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, num + verteces.length);
+
+		this.renderIndex = newIndex;
 	}
 
 	function Point(x, y, color) {

@@ -38,7 +38,14 @@
 
 	$(document).ready(function(){
 		$("#colorpicker").spectrum({
-			color: "#f00"
+			color: "#f00",
+			showInput: true,
+			showInitial: true,
+			preferredFormat: 'hex',
+			clickoutFiresChange: true,
+			change: function(color) {
+				color.toHexString(); // #ff0000
+			}
 		});
 	});
 	</script>
