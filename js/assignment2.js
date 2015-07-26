@@ -86,7 +86,7 @@
 		});
 		var color = tinycolor(options['color']);
 		if (!color.isValid()){
-			color = tinycolor('#000000');
+			color = tinycolor('#FF0000');
 		}
 		return {
 			'lineWidth': parseInt(options['width'] || 2),
