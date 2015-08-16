@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Coursera - WebGL Assignments">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Coursera - WebGL Assignments - Assignment 3</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+	<script src="js/coursera/webgl-utils.js"></script>
+	<script src="js/coursera/initShaders.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/TinyColor-1.0.0/tinycolor.js"></script>
+	<script src="js/underscore-1.8.3/underscore-min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+	<script src="js/assignment3.js"></script>
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		// vertex data
+		attribute vec4 vPosition;
+		// shape settings
+		uniform vec3 theta;
+		uniform vec3 scale;
+		uniform vec3 translate;
+		// camera view
+		uniform mat4 modelViewMatrix;
+		void main() {
+			// trig
+			vec3 angles = radians(theta);
+			vec3 c = cos(angles);
+			vec3 s = sin(angles);
+			// rotation matrix for x axis (column major)
+			mat4 rx = mat4(
+				1.0, 0.0, 0.0, 0.0,
+				0.0, c.x, s.x, 0.0,
+				0.0, -s.x, c.x, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+			// rotation matrix for y axis (column major)
+			mat4 ry = mat4(
+				c.y, 0.0, -s.y, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				s.y, 0.0, c.y, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+			// rotation matrix for z axis (column major)
+			mat4 rz = mat4(
+				c.z, -s.z, 0.0, 0.0,
+				s.z, c.z, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+			// scale matrix (column major)
+			mat4 sc = mat4(
+				scale.x, 0.0, 0.0, 0.0,
+				0.0, scale.y, 0.0, 0.0,
+				0.0, 0.0, scale.z, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+			// translate matrix (column major)
+			mat4 tr = mat4(
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				translate.x, translate.y, translate.z, 1.0
+			);
+			// apply all matricies to the vertex
+			gl_Position = modelViewMatrix * tr * rz * ry * rx * sc * vPosition;
+		}
+	</script>
+	<script id="fragment-shader" type="x-shader/x-fragment">
+		precision mediump float;
+		uniform vec4 fColor;
+		void main() {
+			gl_FragColor = fColor;
+		}
+	</script>
+	<style>
+		* { margin:0; padding:0; }
+		html, body { width:100%; height:100%; }
+		canvas { display:block; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="row" style="margin-top:20px;margin-bottom:20px;">
+			<div class="col-lg-7">
+				<div class="well">
+				<canvas id="gl-canvas" style="background:#ccc;border:1px solid black;margin: auto;" width="600" height="600">Oops ... your browser doesn't support the HTML5 canvas element</canvas>
+				</div>
+				<div id="camera-ctrl-block">
+					<div class="btn-group" role="group">
+						<div id="up" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-up" aria-hidden="true"></span></div>
+						<div id="left" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span></div>
+						<div id="right" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span></div>
+						<div id="down" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="zoom-in" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></div>
+						<div id="zoom-out" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-out" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="reset" class="camera-ctrl-btn btn btn-default">Reset</div>
+						
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-5">
+				<div class="panel panel-default">
+					<div class="panel-heading">Add</div>
+					<div class="panel-body">
+						<div id="add-figures-box" class="btn-group" role="group">
+							<div id="add-sphere" class="figure-add-btn btn btn-default">sphere</div>
+							<div id="add-cone" class="figure-add-btn btn btn-default">cone</div>
+							<div id="add-cylinder" class="figure-add-btn btn btn-default">cylinder</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						Figures <div class="btn btn-default" id="clear-all">Clear all</div>
+					</div>
+					<div class="panel-body" style="max-height:200px;overflow: auto;">
+						<div class="no-figures">No figures added.</div>
+						<table id="figure-list" class="table table-condensed"><tbody></tbody></table>
+					</div>
+				</div>
+			
+				<div class="panel panel-default" id="edit-figure">
+					<div class="panel-heading">Edit figure</div>
+					<div class="panel-body">
+						<form id="options">
+							<div>
+								<input type="color" id="colorpicker" name="color">
+							</div>
+							<div>
+								<h4>Rotate:</h4>
+								<input type="range" name="width" min="-180" value="0" max="180" step="5" >
+								<input type="range" name="width" min="-180" value="0" max="180" step="5" >
+								<input type="range" name="width" min="-180" value="0" max="180" step="5" >
+							</div>
+							<div>
+								<h4>Translate:</h4>
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+							</div>
+							<div>
+								<h4>Scale:</h4>
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+								<input type="range" name="width" min="-1" value="0" max="1" step="0.1" >
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
