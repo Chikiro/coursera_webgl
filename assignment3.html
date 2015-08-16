@@ -139,27 +139,89 @@
 							</div>
 							<div>
 								<h4>Rotate:</h4>
-								<input type="range" name="rotate_x" min="-180" value="0" max="180" step="5" >
-								<input type="range" name="rotate_y" min="-180" value="0" max="180" step="5" >
-								<input type="range" name="rotate_z" min="-180" value="0" max="180" step="5" >
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_x" min="-180" value="0" max="180" step="5" oninput="rotate_x_out.value = rotate_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_x_out" for="rotate_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_y" min="-180" value="0" max="180" step="5" oninput="rotate_y_out.value = rotate_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_y_out" for="rotate_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_z" min="-180" value="0" max="180" step="5" oninput="rotate_z_out.value = rotate_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_z_out" for="rotate_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
 							</div>
 							<div>
 								<h4>Translate:</h4>
-								<input type="range" name="translate_x" min="-1" value="0" max="1" step="0.1" >
-								<input type="range" name="translate_y" min="-1" value="0" max="1" step="0.1" >
-								<input type="range" name="translate_z" min="-1" value="0" max="1" step="0.1" >
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_x" min="-1" value="0" max="1" step="0.1" oninput="translate_x_out.value = translate_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_x_out" for="translate_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_y" min="-1" value="0" max="1" step="0.1" oninput="translate_y_out.value = translate_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_y_out" for="translate_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_z" min="-1" value="0" max="1" step="0.1" oninput="translate_z_out.value = translate_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_z_out" for="translate_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
 							</div>
 							<div>
 								<h4>Scale:</h4>
-								<input type="range" name="scale_x" min="-1" value="0" max="1" step="0.1" >
-								<input type="range" name="scale_y" min="-1" value="0" max="1" step="0.1" >
-								<input type="range" name="scale_z" min="-1" value="0" max="1" step="0.1" >
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_x" min="-1" value="0" max="1" step="0.1" oninput="scale_x_out.value = scale_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_x_out" for="scale_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_y" min="-1" value="0" max="1" step="0.1" oninput="scale_y_out.value = scale_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_y_out" for="scale_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_z" min="-1" value="0" max="1" step="0.1" oninput="scale_z_out.value = scale_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_z_out" for="scale_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
 							</div>
 						</form>
 					</div>
 				</div>
 			</div>
-			
 		</div>
 	</div>
 </body>
