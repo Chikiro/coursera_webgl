@@ -28,6 +28,7 @@
 		figureTable.on('click', '.btn-delete', {'scene': scene}, removeFigureHandler);
 		figureTable.on('click', '.btn-edit', {'scene': scene}, editFigureHandler);
 		$('#clear-all').on('click', {'scene': scene}, clearAllHandler);
+		$('#edit-figure').on('change', {'scene': scene}, updateEditedFigureHandler);
 
 		$(document).on("scene:figureAdd", function(event, figure, curScene) {
 			var html = makeTable(curScene.getFigures());
@@ -54,13 +55,14 @@
 				figureTable.hide();
 				$('.no-figures').show();
 			}
+			$('#edit-figure').hide();
 		});
 	}
 
 	function makeTable(figures){
 		var result = [];
 		_.each(figures, function(figure, index){
-			result.push("<tr data-index=" + index +"><td class=\"col-md-2 col-lg-2\"></td><td></td><td class=\"col-md-3 col-lg-3 \"><div class=\"btn-group pull-right\" role=\"group\"><div class=\"btn-edit btn btn-default btn-xs\"><span class=\"glyphicon glyphicon-pencil\"></span></div><div class=\"btn-delete btn btn-default btn-xs\"><span class=\"glyphicon glyphicon-remove\"></span></div></div></td></tr>");
+			result.push("<tr data-index=" + index +"><td class=\"col-md-2 col-lg-2\">" + (index+1) + "</td><td>" + figure.label + "</td><td class=\"col-md-3 col-lg-3 \"><div class=\"btn-group pull-right\" role=\"group\"><div class=\"btn-edit btn btn-default btn-xs\"><span class=\"glyphicon glyphicon-pencil\"></span></div><div class=\"btn-delete btn btn-default btn-xs\"><span class=\"glyphicon glyphicon-remove\"></span></div></div></td></tr>");
 		});
 		return result.join();
 	}
@@ -72,13 +74,62 @@
 		editFigureByIndex(index, scene);
 	}
 
+	function updateEditedFigureHandler(event){
+		var scene = event.data.scene;
+		var editBox = $('#edit-figure');
+		var index = editBox.data('index');
+		if (index >= 0){
+			var data = readFormData();
+			scene.updateFigureByIndex(index, data);
+		}
+	}
+
+	function readFormData() {
+		var editBox = $('#edit-figure');
+		var form = $('form', editBox);
+		var formData = form.serializeArray();
+		var options = {};
+		$.each(formData, function(index, item){
+			var value = item['value'];
+			if (value.startsWith('translate') || value.startsWith('scale')){
+				value = parseFloat(value);
+			}
+			if (value.startsWith('rotate')){
+				value = parseInt(value);
+			}
+			options[item['name']] = item['value'];
+		});
+		var color = tinycolor(options['color']);
+		if (!color.isValid()){
+			color = tinycolor('#FF0000');
+		}
+		options['color'] = color;
+		options['translate'] = [options['translate_x'], options['translate_y'], options['translate_z']];;
+		options['theta'] = [options['rotate_x'], options['rotate_y'], options['rotate_z']];
+		options['scale'] = [options['scale_x'], options['scale_y'], options['scale_z']];
+		return options;
+	}
+
 	function editFigureByIndex(index, scene){
 		var editBox = $('#edit-figure');
+		editBox.data('index', index);
+		var form = $('form', editBox);
 		var figures = scene.getFigures();
 		console.log(figures)
 		var length = figures.length;
 		if (length && index < length){
+			editBox.data('index', index);
 			var figure = figures[index];
+			$('[name=color]', form).val(figure.color.toHexString());
+			$('[name=rotate_x]', form).val(figure.theta[0]);
+			$('[name=rotate_y]', form).val(figure.theta[1]);
+			$('[name=rotate_z]', form).val(figure.theta[2]);
+			$('[name=scale_x]', form).val(figure.scale[0]);
+			$('[name=scale_y]', form).val(figure.scale[1]);
+			$('[name=scale_z]', form).val(figure.scale[2]);
+			$('[name=translate_x]', form).val(figure.translate[0]);
+			$('[name=translate_y]', form).val(figure.translate[1]);
+			$('[name=translate_z]', form).val(figure.translate[2]);
 			editBox.show();
 		}
 	}
@@ -116,17 +167,17 @@
 		var scene = event.data.scene;
 		if (elId == 'add-sphere'){
 			var s = new Sphere(1);
-			var f = new Figure(s);
+			var f = new Figure(s, {'label': 'Sphere'});
 			scene.addFigure(f);
 		}
 		if (elId == 'add-cylinder'){
 			var s = new Cylinder();
-			var f = new Figure(s);
+			var f = new Figure(s, {'label': 'Cylinder'});
 			scene.addFigure(f);
 		}
 		if (elId == 'add-cone'){
 			var s = new Cone();
-			var f = new Figure(s);
+			var f = new Figure(s, {'label': 'Cone'});
 			scene.addFigure(f);
 		}
 	}
@@ -164,12 +215,13 @@
 		var _options = options || {};
 		var _color = tinycolor(_options['color']);
 		if (!_color.isValid()){
-			_color = tinycolor('#FF0000');
+			//_color = tinycolor('#FF0000');
+			_color = tinycolor.random();
 		}
 		this.color = _color;
 		this.label = _options['label'] || 'new ' + this.type;
 		this.shape = shape;
-		this.theta = _options['theta'] || [60, 0, 0];
+		this.theta = _options['theta'] || [0, 0, 0];
 		this.scale = _options['scale'] || [0.2, 0.2, 0.2];
 		this.translate = _options['translate'] || [0, 0, 0];
 		this.indices = shape.getIndices();
@@ -310,6 +362,23 @@
 		this._figures.push(figure);
 		this.renderFigure(figure);
 		$(document).trigger("scene:figureAdd", [figure, this]);
+	}
+	Scene.prototype.getFigureByIndex = function(index){
+		var length = this._figures.length;
+		if (length && index < length){
+			return this._figures[index];
+		}
+	}
+	Scene.prototype.updateFigureByIndex = function(index, data){
+		var length = this._figures.length;
+		if (length && index < length){
+			var figure = this._figures[index];
+			figure['color'] = data['color'] || figure['color'];
+			figure['theta'] = data['theta'] || figure['theta'];
+			figure['scale'] = data['scale'] || figure['scale'];
+			figure['translate'] = data['translate'] || figure['translate'];
+			this.renderAll();
+		}
 	}
 	Scene.prototype.removeFigureByIndex = function(index){
 		var length = this._figures.length;
@@ -470,13 +539,13 @@
 	}
 	
 	function Cone(height, radius) {
-		this.triangleNum = 30;
+		this.segmentNum = 30;
 		this.height = Math.abs(height) || 1;
 		this.radius = radius || 1;
 	}
 	Cone.prototype.getIndices = function() {
 		var indices = [],
-			n = this.triangleNum;
+			n = this.segmentNum;
 
 		_.each(_.range(n), function(i){
 			indices.push(0);
@@ -508,7 +577,7 @@
 			bottom = [0.0, 0.0, bottomZ],
 			top = [0.0, 0.0, topZ],
 			angle = 1;
-		bottom = bottom.concat(createPolygon(this.triangleNum, angle, this.radius, bottomZ));
+		bottom = bottom.concat(createPolygon(this.segmentNum, angle, this.radius, bottomZ));
 		return bottom.concat(top);
 	}
 
