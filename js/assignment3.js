@@ -115,7 +115,6 @@
 		editBox.data('index', index);
 		var form = $('form', editBox);
 		var figures = scene.getFigures();
-		console.log(figures)
 		var length = figures.length;
 		if (length && index < length){
 			editBox.data('index', index);
@@ -194,7 +193,7 @@
 		scene.clearAll();
 	}
 
-	function createPolygon(n, initAngle, radius, z){
+	function createNgon(n, initAngle, radius, z){
 		var vertices = [],
 			dA = Math.PI*2 / n,
 			r = radius,
@@ -250,7 +249,6 @@
 		this.setDefaultZoom();
 	}
 	Camera.prototype.rotate = function(phi, theta) {
-		console.log(phi, theta);
 		this.phi = normalizeDegree(this.phi + phi);
 		this.theta = normalizeDegree(this.theta + theta);
 
@@ -467,6 +465,7 @@
 	Cylinder.prototype.getIndices = function() {
 		var indices = [];
 		var n = this.segmentNum;
+
 		 // bottom
 		_.each(_.range(n), function(i){
 			indices.push(0);
@@ -477,50 +476,43 @@
 				indices.push(i+2);
 			}
 		});
-		_.each(_.range(n), function(i){
-			indices.push(0);
-			indices.push(i+1);
-			if (i+2 > n){
+
+
+		// side
+		_.each(_.range(n+1), function(i){
+			if (i + 1 > n) {
+				indices.push(i);
 				indices.push(1);
-			} else {
-				indices.push(i+2);
+				indices.push(i + n + 1);
+
+				indices.push(i);
+				indices.push(1 + n + 1);
+				indices.push(i + n + 1);
+			}
+			else {
+				indices.push(i);
+				indices.push(i + 1);
+				indices.push(i + 1 + n + 1);
+				
+				indices.push(i);
+				indices.push(i + n + 1);
+				indices.push(i + 1 + n + 1);
 			}
 		});
+
 		// top
-		var offset = n+1;
-		for (var j=0; j<n; j++) {
-			if (j === n-1) {
-				indices.push(offset);
-				indices.push(n + offset);
-				indices.push(1 + offset);
-			} else {
-				indices.push(offset);
-				indices.push(j+1 + offset);
-				indices.push(j+2 + offset);
+		_.each(_.range(n), function(i){
+			indices.push(n + 1);
+			indices.push(i + 1 + n + 1);
+			if (i+2 > n){
+				indices.push(1 + n + 1);
 			}
-		}
-		for (var k=1; k<=n-1; k++) {
-			if (k === n-1) {
-				// first triangle
-				indices.push(k);
-				indices.push(1);
-				indices.push(k + offset);
-				// second triangle
-				indices.push(k);
-				indices.push(1 + offset);
-				indices.push(k + offset);
-			} else {
-				// first triangle
-				indices.push(k);
-				indices.push(k+1);
-				indices.push(k + 1 + offset);
-				// second triangle
-				indices.push(k);
-				indices.push(k + offset);
-				indices.push(k + 1 + offset);
+			else {
+				indices.push(i + 2 + n + 1);
 			}
-			return indices;
-		}
+		})
+
+		return indices;
 	}
 	Cylinder.prototype._getTopZ = function(){
 		return 0 - this.height;
@@ -533,9 +525,11 @@
 			angle = 0,
 			top = [0.0, 0.0, topZ],
 			bottom = [0.0, 0.0, bottomZ];
-		bottom = bottom.concat(createPolygon(n, angle, radius, bottomZ));
-		top = top.concat(createPolygon(n, angle, radius, topZ));
-		return bottom.concat(top);
+		bottom = bottom.concat(createNgon(n, 0, radius, bottomZ));
+		top = top.concat(createNgon(n, 0, radius, topZ));
+		var result = bottom.concat(top);
+		console.log(result);
+		return result;
 	}
 	
 	function Cone(height, radius) {
@@ -577,7 +571,7 @@
 			bottom = [0.0, 0.0, bottomZ],
 			top = [0.0, 0.0, topZ],
 			angle = 1;
-		bottom = bottom.concat(createPolygon(this.segmentNum, angle, this.radius, bottomZ));
+		bottom = bottom.concat(createNgon(this.segmentNum, angle, this.radius, bottomZ));
 		return bottom.concat(top);
 	}
 
