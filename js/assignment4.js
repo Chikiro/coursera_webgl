@@ -16,7 +16,7 @@
 		if (!gl) {alert('WebGL isn\'t available');}
 
 		gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-		gl.clearColor(1.0, 1.0, 1.0, 1.0);
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		//gl.clear(gl.COLOR_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
 		//gl.enable(gl.CULL_FACE);
@@ -25,6 +25,8 @@
 
 		var scene = new Scene(gl);
 		scene.renderAll();
+		scene.isAnimated = true;
+		scene.animate();
 
 		cameraCtrlBtns.on('click', '.camera-ctrl-btn', {'scene': scene}, cameraBtnsHandler);
 		addFiguresBtns.on('click', '.figure-add-btn', {'scene': scene}, addFigureHandler);
@@ -253,20 +255,49 @@
 
 	function LightSource(options) {
 		this.options = options || {};
-		this.position = this.options.position || vec4(10.0, 10.0, 10.0, 0.0);
+		//this.position = this.options.position || vec4(25.0, 25.0, 25.0, 0.0);
 		this.ambient = this.options.ambient || vec4(0.2, 0.2, 0.2, 1.0);
 		this.diffuse = this.options.diffuse || vec4(1.0, 1.0, 1.0, 1.0);
 		this.specular = this.options.specular || vec4(1.0, 1.0, 1.0, 1.0);
-		//this.animated = true;
-		this.theta = 0.0;
-		//rotation: 'INC',
-		this.distance = 0.0;
+		this.isEnabled = this.options.isEnabled || true;
+		this.shininess = this.options.shininess || 40.0;
 		this.attenuation = 1.0;
+		
+		this.at = vec3(0.0, 0.0, 0.0);
+		this.angle = this.options.angle || 60.0;
+		this.rotation = this.options.rotation || 0.0;
+		this.distance = this.options.distance || 20.0;
 	}
-	LightSource.prototype.getMatTransform = function() {
-		var matT = translate(this.position[0], this.position[1], this.position[2]);
+	LightSource.prototype.getTransform = function() {
+		var position = this.getPosition();
+		var matT = translate(position[0], position[1], position[2]);
 		var matS = genScaleMatrix(0.25, 0.25, 0.25);
 		return mult(matT, matS);
+	}
+	LightSource.prototype.getPosition = function() {
+		var radius = this.distance;
+		var rotationRadians = this.rotation * (Math.PI / 180);
+		var angleRadians = this.angle * (Math.PI / 180);
+		var x = radius * Math.sin(angleRadians) * Math.sin(rotationRadians);
+		var z = radius * Math.sin(angleRadians) * Math.cos(rotationRadians);
+		var y = radius * Math.cos(angleRadians);
+		return vec4(x, y, z, 0.0);
+	}
+	LightSource.prototype.zoom = function(step){
+		this.distance = this.distance - step;
+	}
+	LightSource.prototype.rotate = function(stepX, stepY){
+		this.rotation = normalizeValue(this.rotation + stepX);
+		this.angle = normalizeValue(this.angle + stepY);
+		function normalizeValue(value) {
+			if (value > 360) {
+				return 1;
+			}
+			if (value <= 0) {
+				return 360;
+			}
+			return value;
+		}
 	}
 
 	function Camera() {
@@ -301,7 +332,6 @@
 	Camera.prototype.rotate = function(stepX, stepY){
 		this.rotation = normalizeValue(this.rotation + stepX);
 		this.angle = normalizeValue(this.angle + stepY);
-		console.log(this.angle);
 		function normalizeValue(value) {
 			if (value > 360) {
 				return 1;
@@ -314,11 +344,12 @@
 	}
 
 	function Scene(gl){
+		this.isAnimated = false;
 		this._camera = new Camera();
 		this._gl = gl;
 		this._figures = [];
 		this._program = initShaders(this._gl, 'vertex-shader', 'fragment-shader');
-		this._lights = [new LightSource()];
+		this._lights = [new LightSource({'rotation': 0, 'angle': 0, distance: 40}), new LightSource()];
 	}
 	Scene.prototype.getFigures = function(){
 		return this._figures;
@@ -341,10 +372,9 @@
 
 		gl.useProgram(program);
 
-		var lights = [lightCreate(), lightCreate()];
+		var lights = this._lights;
+		//var lights = [lightCreate(), lightCreate()];
 		//lights[1].enabled = false;
-
-		var modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
 
 		var projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 		gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix));
@@ -359,55 +389,30 @@
 		gl.uniform4fv(specularProductLoc, flatten(lights[0].specular));
 
 		var shininessLoc = gl.getUniformLocation(program, "shininess");
-		gl.uniform1f(shininessLoc, lights[0].materialShininess);
+		gl.uniform1f(shininessLoc, lights[0].shininess);
 
 		lights[0].positionLoc = gl.getUniformLocation(program, "lightPosition1");
-		gl.uniform4fv(lights[0].positionLoc, flatten(lights[0].position));
+		gl.uniform4fv(lights[0].positionLoc, flatten(lights[0].getPosition()));
 
 		lights[1].positionLoc = gl.getUniformLocation(program, "lightPosition2");
-		gl.uniform4fv(lights[1].positionLoc, flatten(lights[1].position));
+		gl.uniform4fv(lights[1].positionLoc, flatten(lights[1].getPosition()));
 
-		lights[0].enabledLoc = gl.getUniformLocation(program, "lightEnabled1");
-		gl.uniform1i(lights[0].enabledLoc, lights[0].enabled);
+		var enabledLoc1 = gl.getUniformLocation(program, "lightEnabled1");
+		gl.uniform1i(enabledLoc1, lights[0].isEnabled);
 
-		lights[1].enabledLoc = gl.getUniformLocation(program, "lightEnabled2");
-		gl.uniform1i(lights[1].enabledLoc, lights[1].enabled);
+		var enabledLoc2 = gl.getUniformLocation(program, "lightEnabled2");
+		gl.uniform1i(enabledLoc2, lights[1].isEnabled);
 
 		// Draw Lights
 		for(var i = 0; i < lights.length; ++i) {
 			if(lights[i].enabled) {
-				gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(lights[i].matTransform));
-				gl.uniform4fv(vColor, flatten(colors[lights[i].objectColor]));
+				gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(lights[i].getTransform()));
 
 				//gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
 				//gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
 				//gl.drawArrays(gl.TRIANGLES, 0, numPointsSphere);
 			}
 		}
-
-		function lightCreate() {
-		  var light = {
-			enabled: true,
-			ambient: vec4(0.2, 0.2, 0.2, 1.0),
-			diffuse: vec4(1.0, 1.0, 1.0, 1.0),
-			specular: vec4(1.0, 1.0, 1.0, 1.0),
-			materialShininess: 40.0,
-			position: vec4(25.0, 25.0, 25.0, 0.0),
-			positionLoc: null,
-			enabledLoc: null,
-			objectColor: 2,
-			matTransform: mat4(),
-			updateTransform: function () {
-			  var matT = translate(light.position[0], light.position[1], light.position[2]);
-			  var matS = genScaleMatrix(0.25, 0.25, 0.25);
-			  light.matTransform = mult(matT, matS);
-			}
-		  };
-		  light.updateTransform();
-		  return light;
-		}
-
-		//var lights = [lightCreate(), lightCreate()];
 
 		//var enabledLoc1 = gl.getUniformLocation(program, "lightEnabled1");
 		//gl.uniform1i(enabledLoc1, 1);
@@ -440,7 +445,16 @@
 
 	}
 	Scene.prototype.animate = function(){
-		this.rotateCamera(0, 10);
+		if (this.isAnimated){
+			//this.rotateCamera(0.2, 0);
+			this._lights[0].rotate(2, 0);
+			this._lights[1].rotate(1, 3);
+			this.renderAll();
+		}
+		var that = this;
+		requestAnimationFrame(function(){
+			that.animate();
+		});
 	}
 	Scene.prototype.renderAll = function(){
 		var gl = this._gl;
@@ -480,9 +494,7 @@
 		gl.bufferData(gl.ARRAY_BUFFER, flatten(grid), gl.STATIC_DRAW);
 
 		var vColor = gl.getUniformLocation(program, "vColor");
-		gl.uniform4fv(vColor, flatten(vec4(1.0, 1.0, 1.0, 1.0)));
-		var colorLoc = gl.getUniformLocation(program, 'fColor');
-		gl.uniform4fv(colorLoc, flatten(vec4(0.1, 0.1, 0.1, 1.0)));
+		gl.uniform4fv(vColor, flatten(vec4(0.2, 0.2, 0.2, 1.0)));
 
 		var modelMatrixLoc = gl.getUniformLocation(program, "modelMatrix");
 		gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(mat4()));
@@ -522,7 +534,7 @@
 	Scene.prototype.addFigure = function(figure){
 		figure.scene = this;
 		this._figures.push(figure);
-		this.renderFigure(figure);
+		this.renderAll();
 		$(document).trigger("scene:figureAdd", [figure, this]);
 	}
 	Scene.prototype.getFigureByIndex = function(index){
