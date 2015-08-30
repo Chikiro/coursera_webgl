@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Coursera - WebGL Assignments">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Coursera - WebGL Assignments - Assignment 4</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+	<script src="js/coursera/webgl-utils.js"></script>
+	<script src="js/coursera/initShaders.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/TinyColor-1.0.0/tinycolor.js"></script>
+	<script src="js/underscore-1.8.3/underscore-min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+	<script src="js/assignment4.js"></script>
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		attribute vec4 vPosition;
+		uniform vec4 vColor;
+		uniform vec4 cameraPosition;
+		uniform mat4 modelMatrix;
+		uniform mat4 viewMatrix;
+		uniform mat4 projectionMatrix;
+		uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+		uniform vec4 lightPosition1, lightPosition2;
+		uniform int lightEnabled1, lightEnabled2;
+		uniform float shininess;
+		varying vec4 fColor;
+
+		// Compute color component for a single light source
+		vec4 computeLightComponent(
+			vec3 P,
+			vec3 N,
+			vec4 lightPosition) {
+
+			// vector from vertex position to light source
+			vec3 L = normalize(lightPosition.xyz - P);
+
+			// vector from the vertex position to the eye
+			///vec3 E = normalize(vPosition * viewMatrix * modelMatrix).xyz;
+			vec3 E = normalize(cameraPosition.xyz - P);
+
+			// halfway vector
+			vec3 H = normalize(L + E);
+
+			// Set ambient light
+			vec4 ambient = ambientProduct * vColor;
+
+			// Compute diffuse light
+			float Kd = max(dot(L, N), 0.0);
+			vec4 diffuse = Kd * diffuseProduct * vColor;
+
+			// Compute specular light
+			float Ks = pow( max(dot(N, H), 0.0), shininess);
+			vec4 specular = Ks * specularProduct;
+
+			// Compute color
+			vec4 color = ambient + diffuse + specular;
+			color.a = 1.0;
+
+			return color;
+		}
+
+	void main() {
+
+		// Assume normal is same as untransformed vertex position
+		vec4 vNormal = normalize(vPosition);
+		vNormal.w = 0.0;
+
+		// transform vertex position and normal into model coordinates
+		vec3 P = (modelMatrix * vPosition).xyz;
+		vec3 N = normalize(modelMatrix * vNormal).xyz;
+
+		// Compute vertex position
+		gl_Position = projectionMatrix * viewMatrix * modelMatrix * vPosition;
+
+		// Compute each color component and sum
+		vec4 lightColor1 = vec4(0.1, 0.1, 0.1, 1) * vColor;
+		vec4 lightColor2 = vec4(0.1, 0.1, 0.1, 1) * vColor;
+		if(lightEnabled1 != 0) {
+			lightColor1 = computeLightComponent(P, N, lightPosition1);
+		}
+		if(lightEnabled2 != 0) {
+			lightColor2 = computeLightComponent(P, N, lightPosition2);
+		}
+		fColor = lightColor1 + lightColor2;
+
+	}
+  </script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+	precision mediump float;
+	varying vec4 fColor;
+	void main() {
+		gl_FragColor = fColor;
+	}
+</script>
+	<style>
+		* { margin:0; padding:0; }
+		html, body { width:100%; height:100%; }
+		canvas { display:block; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="row" style="margin-top:20px;margin-bottom:20px;">
+			<div class="col-lg-7">
+				<div class="well">
+				<canvas id="gl-canvas" style="background:#ccc;border:1px solid black;margin: auto;" width="600" height="600">Oops ... your browser doesn't support the HTML5 canvas element</canvas>
+				</div>
+				<div id="camera-ctrl-block">
+					Camera: 
+					<div class="btn-group" role="group">
+						<div id="up" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-up" aria-hidden="true"></span></div>
+						<div id="left" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span></div>
+						<div id="right" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span></div>
+						<div id="down" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="zoom-in" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></div>
+						<div id="zoom-out" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-out" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="reset" class="camera-ctrl-btn btn btn-default">Reset</div>
+						
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-5">
+				<div class="panel panel-default">
+					<div class="panel-heading">Add</div>
+					<div class="panel-body">
+						<div id="add-figures-box" class="btn-group" role="group">
+							<div id="add-sphere" class="figure-add-btn btn btn-default">sphere</div>
+							<!--<div id="add-cone" class="figure-add-btn btn btn-default">cone</div>-->
+							<div id="add-cylinder" class="figure-add-btn btn btn-default">cylinder</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						Figures <div class="btn btn-default" id="clear-all">Clear all</div>
+					</div>
+					<div class="panel-body" style="max-height:200px;overflow: auto;">
+						<div class="no-figures">No figures added.</div>
+						<table id="figure-list" class="table table-condensed"><tbody></tbody></table>
+					</div>
+				</div>
+				<div class="panel panel-default" id="edit-figure">
+					<div class="panel-heading">Edit figure</div>
+					<div class="panel-body">
+						<form>
+							<div>
+								<input type="color" id="colorpicker" name="color">
+							</div>
+							<div>
+								<h4>Rotate:</h4>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_x" min="-180" value="0" max="180" step="5" oninput="rotate_x_out.value = rotate_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_x_out" for="rotate_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_y" min="-180" value="0" max="180" step="5" oninput="rotate_y_out.value = rotate_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_y_out" for="rotate_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="rotate_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="rotate_z" min="-180" value="0" max="180" step="5" oninput="rotate_z_out.value = rotate_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="rotate_z_out" for="rotate_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+							</div>
+							<div>
+								<h4>Translate:</h4>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_x" min="-5" value="0" max="5" step="0.1" oninput="translate_x_out.value = translate_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_x_out" for="translate_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_y" min="-5" value="0" max="5" step="0.1" oninput="translate_y_out.value = translate_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_y_out" for="translate_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="translate_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="translate_z" min="-5" value="0" max="5" step="0.1" oninput="translate_z_out.value = translate_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="translate_z_out" for="translate_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+							</div>
+							<div>
+								<h4>Scale:</h4>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_x">X</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_x" min="0.1" value="1" max="10" step="0.1" oninput="scale_x_out.value = scale_x.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_x_out" for="scale_x" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_y">Y</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_y" min="0.1" value="1" max="10" step="0.1" oninput="scale_y_out.value = scale_y.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_y_out" for="scale_y" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+								<div class="form-group">
+									<div class="col-md-1 col-lg-1"><label for="scale_z">Z</label></div>
+									<div class="col-md-9 col-lg-9">
+										<input type="range" name="scale_z" min="0.1" value="1" max="10" step="0.1" oninput="scale_z_out.value = scale_z.valueAsNumber;">
+									</div>
+									<div class="col-md-2 col-lg-2"><output name="scale_z_out" for="scale_z" class="badge">0</output></div>
+								</div>
+								<div class="clearfix"></div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -22,6 +22,7 @@
 		gl.enable(gl.CULL_FACE);
 
 		var scene = new Scene(gl);
+		scene.renderGrid();
 
 		cameraCtrlBtns.on('click', '.camera-ctrl-btn', {'scene': scene}, cameraBtnsHandler);
 		addFiguresBtns.on('click', '.figure-add-btn', {'scene': scene}, addFigureHandler);
@@ -294,7 +295,7 @@
 	Camera.prototype.getViewMatrix = function(){
 		var ry = rotateY(this.phi);
 		var rx = rotateX(this.theta);
-		var s = scalem(this.x, this.y, this.z);
+		var s = genScaleMatrix(this.x, this.y, this.z);
 		var view = mat4();
 		var view = mult(view, ry);
 		var view = mult(view, rx);
@@ -346,11 +347,55 @@
 		gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(camera.getViewMatrix()));
 		gl.drawElements(gl.LINE_LOOP, figure.indices.length, gl.UNSIGNED_SHORT, 0);
 	}
+	Scene.prototype.renderGrid = function(){
+		var gl = this._gl;
+		var camera = this._camera;
+		var program = this._program;
+		var grid = [];
+		var size = 10;
+		for(var x = -size; x <= size; ++x) {
+			grid.push(vec4(x, 0, -size));
+			grid.push(vec4(x, 0, size));
+		}
+		for(var z = -size; z <= size; ++z) {
+			grid.push(vec4(-size, 0, z));
+			grid.push(vec4(size, 0, z));
+		}
+		gl.useProgram(program);
+
+		var vBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, flatten(grid), gl.STATIC_DRAW);
+
+		var colorLoc = gl.getUniformLocation(program, 'fColor');
+		gl.uniform4fv(colorLoc, flatten(vec4(0.1, 0.1, 0.1, 1.0)));
+		
+		var modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
+		gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(camera.getViewMatrix()));
+
+		var scaleLoc = gl.getUniformLocation(program, 'scale');
+		gl.uniform3fv(scaleLoc, [0.2, 0.2, 0.2]);
+
+		var thetaLoc = gl.getUniformLocation(program, 'theta');
+		gl.uniform3fv(thetaLoc, [0, 0, 0]);
+
+		var translateLoc = gl.getUniformLocation(program, 'translate');
+		gl.uniform3fv(translateLoc, [0, 0, 0]);
+
+		var vPosition = gl.getAttribLocation(program, 'vPosition');
+		gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(vPosition);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+		gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.LINES, 0, grid.length);
+	}
 	Scene.prototype.renderAll = function(){
 		var gl = this._gl;
 		var figures = this._figures;
 		var _that = this;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		this.renderGrid();
 		_.each(figures, function(figure){
 			_that.renderFigure(figure);
 		});
@@ -408,6 +453,7 @@
 			_that.removeFigureByIndex(index);
 		});
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		this.renderGrid();
 	}
 
 	function Sphere(radius) {
