@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="Coursera - WebGL Assignments">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Coursera - WebGL Assignments - Assignment 5</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+	<script src="js/coursera/webgl-utils.js"></script>
+	<script src="js/coursera/initShaders.js"></script>
+	<script src="js/coursera/MV.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/TinyColor-1.0.0/tinycolor.js"></script>
+	<script src="js/underscore-1.8.3/underscore-min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script src="js/assignment5.js"></script>
+	<script id="vertex-shader" type="x-shader/x-vertex">
+		attribute vec4 vPosition;
+		attribute vec3 vNormal;
+		attribute vec2 vTexCoord;
+
+		varying vec2 fTexCoord;
+
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+
+		// lighting
+		uniform vec4 lightPosition;
+		uniform mat3 normalMatrix;
+
+		varying vec3 N, L, E;
+		void main() {
+			vec3 light;
+			vec3 pos = (modelViewMatrix * vPosition).xyz;
+			if(lightPosition.w == 0.0)  L = normalize(lightPosition.xyz);
+			else  L = normalize(lightPosition.xyz - pos);
+			E = -normalize(pos);
+			N = normalize( normalMatrix*vNormal.xyz);
+			fTexCoord = vTexCoord;
+			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+		}
+	</script>
+	<script id="fragment-shader" type="x-shader/x-fragment">
+		precision mediump float;
+		uniform vec4 ambientProduct;
+		uniform vec4 diffuseProduct;
+		uniform vec4 specularProduct;
+		uniform float shininess;
+		varying vec3 N, L, E;
+		varying  vec2 fTexCoord;
+		uniform vec4 fColor;
+		uniform sampler2D texture;
+		void main() {
+			vec4 fColor;
+			vec3 H = normalize(L + E);
+			vec4 ambient = ambientProduct;
+			float Kd = max(dot(L, N), 0.0);
+			vec4 diffuse = Kd*diffuseProduct;
+			float Ks = pow(max(dot(N, H), 0.0), shininess);
+			vec4 specular = Ks * specularProduct;
+			if(dot(L, N) < 0.0) specular = vec4(0.0, 0.0, 0.0, 1.0);
+			fColor = ambient + diffuse + specular;
+			fColor.a = 1.0;
+			gl_FragColor = fColor * texture2D(texture, fTexCoord);
+		}
+	</script>
+
+	<script id="vertex-shader-2" type="x-shader/x-vertex">
+		attribute vec4 vPosition;
+		attribute vec3 vNormal;
+		varying vec4 fColor;
+		varying vec3 R;
+		uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+		uniform vec4 lightPosition;
+		uniform float shininess;
+		uniform mat3 normalMatrix;
+		void main() {
+			vec3 pos = (modelViewMatrix * vPosition).xyz;
+			vec3 L;
+			// check for directional light
+			if(lightPosition.w == 0.0) L = normalize(lightPosition.xyz);
+			else L = normalize( lightPosition.xyz - pos );
+			// Because the eye point the is at the orgin
+			// the vector from the vertex position to the eye is
+			vec3 E = -normalize(pos);
+			// halfway vector
+			vec3 H = normalize(L + E);
+			// Transform vertex normal into eye coordinates
+			vec3 N = normalize(normalMatrix*vNormal.xyz);
+			R = reflect(pos, N);
+			// Compute terms in the illumination equation
+			vec4 ambient = ambientProduct;
+			float Kd = max(dot(L, N), 0.0);
+			vec4 diffuse = Kd*diffuseProduct;
+			float Ks = pow( max(dot(N, H), 0.0), shininess );
+			vec4 specular = Ks * specularProduct;
+			if(dot(L, N) < 0.0) {
+				specular = vec4(0.0, 0.0, 0.0, 1.0);
+			}
+			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+			fColor = ambient + diffuse + specular;
+			fColor.a = 1.0;
+		}
+	</script>
+
+	<script id="fragment-shader-2" type="x-shader/x-fragment">
+		precision mediump float;
+		varying vec4 fColor;
+		uniform samplerCube texMap;
+		varying vec3 R;
+		void main()
+		{
+			vec4 texColor = textureCube(texMap, R);
+			gl_FragColor = fColor*texColor;
+		}
+	</script>
+	<style>
+		* { margin:0; padding:0; }
+		html, body { width:100%; height:100%; }
+		canvas { display:block; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="row" style="margin-top:20px;margin-bottom:20px;">
+			<div class="col-lg-7">
+				<div class="well">
+				<canvas id="gl-canvas" style="background:#ccc;border:1px solid black;margin: auto;" width="600" height="600">Oops ... your browser doesn't support the HTML5 canvas element</canvas>
+				</div>
+				<div id="camera-ctrl-block">
+					Camera: 
+					<div class="btn-group" role="group">
+						<div id="up" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-up" aria-hidden="true"></span></div>
+						<div id="left" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span></div>
+						<div id="right" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span></div>
+						<div id="down" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-menu-down" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="zoom-in" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></div>
+						<div id="zoom-out" class="camera-ctrl-btn btn btn-default"><span class="glyphicon glyphicon-zoom-out" aria-hidden="true"></span></div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="reset" class="camera-ctrl-btn btn btn-default">Reset</div>
+					</div>
+					<div class="btn-group" role="group">
+						<div id="auto" class="camera-ctrl-btn btn btn-default">Auto</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-5">
+				<div class="panel panel-default" id="edit-mapping">
+					<div class="panel-heading">Mapping</div>
+					<div class="panel-body">
+						<form>
+							<div>
+								<div class="form-group">
+									<div id="mappingMethodSelection" class="radio-form-group">
+										<label><input type="radio" name="mapping" value="spherical" checked>Spherical</label>
+										<label><input type="radio" name="mapping" value="planar">Planar</label>
+										<label><input type="radio" name="mapping" value="cylindrical">Cylindrical</label>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="panel panel-default">
+					<div class="panel-heading">Texture</div>
+					<div class="panel-body" id="texture-box">
+						<div class="btn-group" role="group">
+							<div class="texture-btn btn btn-default" data-texture="mars.jpg">Mars</div>
+							<div class="texture-btn btn btn-default" data-texture="moon.jpg">Moon</div>
+							<div class="texture-btn btn btn-default" data-texture="venus.jpg">Venus</div>
+							<div class="texture-btn btn btn-default" data-texture="yukatan.jpg">Yukatan</div>
+						</div>
+						<div class="clearfix"></div>
+						<div class="btn-group" role="group">
+							<div class="texture-btn btn btn-default" data-texture="titan.jpg">Titan</div>
+							<div class="texture-btn btn btn-default" data-texture="cardassia.jpg">Cardassia</div>
+							<div class="texture-btn btn btn-default" data-texture="dagobah.jpg">Dagobah</div>
+						</div>
+						<div class="clearfix"></div>
+						<div class="btn-group" role="group">
+							<div class="texture-btn btn btn-default" data-texture="earth_clouds.jpg">Earth clouds</div>
+							<div class="texture-btn btn btn-default" data-texture="earth_land.jpg">Earth land</div>
+							<div class="texture-btn btn btn-default" data-texture="earth_lights.jpg">Earth lights</div>
+						</div>
+						<div class="btn-group" role="group">
+							<div class="texture-btn btn btn-default" data-texture="sun.jpg">Sun</div>
+							<div class="texture-btn btn btn-default" data-texture="terraformedpluto.jpg">Terraformed Pluto</div>
+							<div class="texture-btn btn btn-default" data-texture="vtoraya.jpg">Vtoraya</div>
+						</div>
+						<div class="clearfix"></div>
+						<div class="btn-group" role="group">
+							<div class="texture-btn btn btn-default" data-texture="tatooine.jpg">Tatooine</div>
+							<div class="texture-btn btn btn-default" data-texture="deathstar.jpg">Death Star</div>
+							<div class="texture-btn btn btn-default" data-texture="softball.jpg">Softball</div>
+						</div>
+						<div class="clearfix"></div>
+					</div>
+				</div>
+				<div class="panel panel-default">
+					<div class="panel-heading">Pattern</div>
+					<div class="panel-body" id="pattern-box">
+						<div id="pattern-box" class="btn-group" role="group">
+							<div class="pattern-btn btn btn-default" data-size="256">random 256</div>
+							<div class="pattern-btn btn btn-default" data-size="128">random 128</div>
+							<div class="pattern-btn btn btn-default" data-size="64">random 64</div>
+						</div>
+						<div class="clearfix"></div>
+						<div class="btn-group" role="group">
+							<div class="pattern-btn btn btn-default" data-size="64" data-colors="black;white">black & white 128</div>
+							<div class="pattern-btn btn btn-default" data-size="512" data-colors="red;blue">red & blue 512</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
